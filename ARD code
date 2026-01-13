@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMPUS WILDLIFE JOURNAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #3c5a82; --accent: #64b5f6; --bg: #f0f4f8; } /* Cool blue "Scientific" theme */
+        body { font-family: 'Quicksand', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 0; }
+        
+        header { background: var(--primary); color: white; padding: 2rem; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative;}
+        .guide-btn { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 5px 15px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; }
+
+        /* PRINT LOGIC */
+        @media print {
+            .btn, .btn-back, .delete-btn, header, .add-card, input, textarea, .guide-btn, .edit-controls { display: none !important; }
+            body { background: white; }
+            #encyclopedia-view { display: block !important; box-shadow: none; padding: 0; }
+            #view-img { height: 450px !important; border: 1px solid #eee; }
+        }
+
+        /* GRID SYSTEM */
+        .animal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s; border: 2px solid transparent; text-align: center; }
+        .card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .animal-img { width: 100%; height: 180px; background-size: cover; background-position: center; }
+        .add-card { border: 3px dashed #ccc; display: flex; align-items: center; justify-content: center; min-height: 230px; font-size: 50px; color: #ccc; }
+
+        /* VIEWS & MODALS */
+        #encyclopedia-view { display: none; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+        .modal { background: white; padding: 30px; border-radius: 20px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+
+        /* UI ELEMENTS */
+        .btn { background: var(--accent); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; font-family: inherit; }
+        .btn:hover { background: var(--primary); }
+        .btn-back { background: #666; width: auto; margin-bottom: 20px; }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: inherit;}
+        .comment { background: #f8fbff; padding: 15px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--accent); text-align: left; }
+    </style>
+</head>
+<body>
+
+<header>
+    <button class="guide-btn" onclick="toggleModal('guide-modal', true)">📋 CAMPUS FIELD GUIDE</button>
+    <h1>🔍 Campus Wildlife Journal</h1>
+    <p>Documenting Our School's Ecosystem</p>
+</header>
+
+<div class="container">
+    <div id="grid-view">
+        <div class="animal-grid" id="main-grid"></div>
+    </div>
+
+    <div id="encyclopedia-view">
+        <button class="btn btn-back" onclick="showGrid()">← Back to Campus Map</button>
+        
+        <h2 id="view-name" style="font-size: 2.5rem; margin-bottom: 5px;">Animal Name</h2>
+        <p id="view-sci-display" style="font-style: italic; color: #666; margin-bottom: 20px; font-size: 1.2rem;"></p>
+        
+        <div id="view-img" style="width:100%; height:350px; border-radius:15px; background-size:cover; background-position: center; margin-bottom:20px;"></div>
+        
+        <div class="edit-controls">
+            <label><b>Scientific Name:</b></label>
+            <input type="text" id="scientific-input" placeholder="Find the Latin name...">
+            <label><b>Campus Sighting Notes:</b></label>
+            <textarea id="comment-input" rows="3" placeholder="Where on campus did you see it? What was it doing?"></textarea>
+            <button class="btn" onclick="saveDetails()">💾 Save Observation</button>
+            <button class="btn" style="background:#3498db" onclick="window.print()">🖨️ Print Specimen Report</button>
+        </div>
+
+        <div id="comment-list" style="margin-top:30px;"></div>
+        <button class="btn" style="background:#f87171; font-size:11px; margin-top:50px; opacity:0.5;" onclick="deleteAnimal()">Remove from Map</button>
+    </div>
+</div>
+
+<div id="guide-modal" class="overlay" onclick="toggleModal('guide-modal', false)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2>🌿 Campus Field Research</h2>
+        <p>Use this tool to track the biodiversity found right here on our school grounds!</p>
+        <hr>
+        <ol style="line-height: 1.6;">
+            <li><b>Look Outside:</b> Go for a walk in the courtyard or playground.</li>
+            <li><b>Spot a Resident:</b> Find a bird, insect, or mammal. Take a mental picture or a real photo!</li>
+            <li><b>Log the Data:</b> If it's not in the journal yet, use the <b>(+)</b> button to add it.</li>
+            <li><b>Scientific Research:</b> Use a field guide to find its scientific name and habitat needs.</li>
+            <li><b>Add Observations:</b> "Saw a Gray Squirrel near the oak tree by the gym."</li>
+        </ol>
+        <button class="btn" onclick="toggleModal('guide-modal', false)">Start Researching!</button>
+    </div>
+</div>
+
+<div id="add-modal" class="overlay" onclick="toggleModal('add-modal', false)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <h2>Add Campus Specimen</h2>
+        <input type="text" id="new-name" placeholder="Name (e.g. Garden Snail)">
+        <input type="text" id="new-img" placeholder="Paste Photo Link">
+        <button class="btn" onclick="confirmAdd()">Add to Map</button>
+    </div>
+</div>
+
+<script>
+    // CAMPUS DEFAULTS
+    const defaultAnimals = [
+        { id: 1, name: "Gray Squirrel", img: "https://images.unsplash.com/photo-1504208434309-cb69f4fe52b0?w=800" },
+        { id: 2, name: "American Robin", img: "https://images.unsplash.com/photo-1620188461014-99765437818b?w=800" },
+        { id: 3, name: "Honey Bee", img: "https://images.unsplash.com/photo-1559424751-6893693e5066?w=800" }
+    ];
+
+    let animals = JSON.parse(localStorage.getItem('campus_animals')) || defaultAnimals;
+    let entries = JSON.parse(localStorage.getItem('campus_entries')) || {};
+    let currentId = null;
+
+    function renderGrid() {
+        const grid = document.getElementById('main-grid');
+        grid.innerHTML = '';
+        animals.forEach(a => {
+            grid.innerHTML += `<div class="card" onclick="viewAnimal(${a.id})"><div class="animal-img" style="background-image:url('${a.img}')"></div><div style="padding:15px;"><h3>${a.name}</h3></div></div>`;
+        });
+        grid.innerHTML += `<div class="card add-card" onclick="toggleModal('add-modal', true)">+</div>`;
+    }
+
+    function viewAnimal(id) {
+        currentId = id;
+        const animal = animals.find(a => a.id === id);
+        document.getElementById('grid-view').style.display = 'none';
+        document.getElementById('encyclopedia-view').style.display = 'block';
+        document.getElementById('view-name').innerText = animal.name;
+        document.getElementById('view-img').style.backgroundImage = `url('${animal.img}')`;
+        const data = entries[id] || { sci: "Scientific Name: TBD", notes: [] };
+        document.getElementById('scientific-input').value = data.sci === "Scientific Name: TBD" ? "" : data.sci;
+        document.getElementById('view-sci-display').innerText = data.sci;
+        renderNotes(data.notes);
+    }
+
+    function showGrid() {
+        document.getElementById('grid-view').style.display = 'block';
+        document.getElementById('encyclopedia-view').style.display = 'none';
+    }
+
+    function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'flex' : 'none'; }
+
+    function confirmAdd() {
+        const name = document.getElementById('new-name').value;
+        const img = document.getElementById('new-img').value || 'https://via.placeholder.com/500?text=Campus+Specimen';
+        if(!name) return;
+        animals.push({ id: Date.now(), name, img });
+        localStorage.setItem('campus_animals', JSON.stringify(animals));
+        toggleModal('add-modal', false);
+        renderGrid();
+    }
+
+    function saveDetails() {
+        const sci = document.getElementById('scientific-input').value || "Scientific Name: TBD";
+        const note = document.getElementById('comment-input').value;
+        if(!entries[currentId]) entries[currentId] = { sci: "", notes: [] };
+        entries[currentId].sci = sci;
+        if(note.trim()) entries[currentId].notes.push({ text: note, date: new Date().toLocaleDateString() });
+        localStorage.setItem('campus_entries', JSON.stringify(entries));
+        document.getElementById('comment-input').value = "";
+        viewAnimal(currentId);
+        alert("Observation Saved!");
+    }
+
+    function renderNotes(notes) {
+        const list = document.getElementById('comment-list');
+        list.innerHTML = "<h3>Sighting History</h3>";
+        notes.slice().reverse().forEach(n => {
+            list.innerHTML += `<div class="comment">${n.text}<br><small>Sighted on: ${n.date}</small></div>`;
+        });
+    }
+
+    function deleteAnimal() {
+        if(confirm("Remove this animal from the campus map?")) {
+            animals = animals.filter(a => a.id !== currentId);
+            localStorage.setItem('campus_animals', JSON.stringify(animals));
+            showGrid();
+            renderGrid();
+        }
+    }
+
+    window.onload = renderGrid;
+</script>
+</body>
+</html>
